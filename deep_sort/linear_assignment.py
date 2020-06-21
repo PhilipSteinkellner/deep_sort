@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import numpy as np
 from sklearn.utils.linear_assignment_ import linear_assignment
 from . import kalman_filter
+from termcolor import colored
 
 
 INFTY_COST = 1e+5
@@ -67,6 +68,7 @@ def min_cost_matching(
     for row, col in indices:
         track_idx = track_indices[row]
         detection_idx = detection_indices[col]
+        #print(colored("{}: trackID={}, detectionID={}, cost={}".format(distance_metric.__name__, track_idx, detection_idx, cost_matrix[row, col]), "blue"))
         if cost_matrix[row, col] > max_distance:
             unmatched_tracks.append(track_idx)
             unmatched_detections.append(detection_idx)

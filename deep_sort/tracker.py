@@ -37,7 +37,7 @@ class Tracker:
 
     """
 
-    def __init__(self, metric, max_iou_distance=0.7, max_age=30, n_init=3):
+    def __init__(self, metric, max_iou_distance=1.0, max_age=30, n_init=3):
         self.metric = metric
         self.max_iou_distance = max_iou_distance
         self.max_age = max_age
@@ -116,11 +116,11 @@ class Tracker:
 
         # Associate remaining tracks together with unconfirmed tracks using IOU.
         iou_track_candidates = unconfirmed_tracks + [
-            k for k in unmatched_tracks_a if
-            self.tracks[k].time_since_update == 1]
-        unmatched_tracks_a = [
-            k for k in unmatched_tracks_a if
-            self.tracks[k].time_since_update != 1]
+            k for k in unmatched_tracks_a] #if
+            #self.tracks[k].time_since_update == 1]
+        unmatched_tracks_a = []
+            #k for k in unmatched_tracks_a if
+            #self.tracks[k].time_since_update != 1]
         matches_b, unmatched_tracks_b, unmatched_detections = \
             linear_assignment.min_cost_matching(
                 iou_matching.iou_cost, self.max_iou_distance, self.tracks,
@@ -133,6 +133,6 @@ class Tracker:
     def _initiate_track(self, detection):
         mean, covariance = self.kf.initiate(detection.to_xyah())
         self.tracks.append(Track(
-            mean, covariance, self._next_id, self.n_init, self.max_age,
+            mean, covariance, self._next_id, self.n_init, self.max_age, detection.cl,
             detection.feature))
         self._next_id += 1
