@@ -89,4 +89,5 @@ ENV/
 .ropeproject
 
 MOT16
-resources
+resources/detections
+*.mp4
