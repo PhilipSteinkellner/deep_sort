@@ -37,7 +37,7 @@ class Tracker:
 
     """
 
-    def __init__(self, metric, max_iou_distance=1.0, max_age=30, n_init=3):
+    def __init__(self, metric, max_iou_distance=0.9, max_age=30, n_init=3):
         self.metric = metric
         self.max_iou_distance = max_iou_distance
         self.max_age = max_age
@@ -108,19 +108,20 @@ class Tracker:
         unconfirmed_tracks = [
             i for i, t in enumerate(self.tracks) if not t.is_confirmed()]
 
-        # Associate confirmed tracks using appearance features.
+        # Associate confirmed tracks using appearance features (and motion vector).
         matches_a, unmatched_tracks_a, unmatched_detections = \
             linear_assignment.matching_cascade(
                 gated_metric, self.metric.matching_threshold, self.max_age,
                 self.tracks, detections, confirmed_tracks)
 
         # Associate remaining tracks together with unconfirmed tracks using IOU.
+        # only for tracks who have not been updated for less than 15 frames
         iou_track_candidates = unconfirmed_tracks + [
-            k for k in unmatched_tracks_a] #if
-            #self.tracks[k].time_since_update == 1]
-        unmatched_tracks_a = []
-            #k for k in unmatched_tracks_a if
-            #self.tracks[k].time_since_update != 1]
+            k for k in unmatched_tracks_a if
+            self.tracks[k].time_since_update <= 15]
+        unmatched_tracks_a = [
+            k for k in unmatched_tracks_a if
+            self.tracks[k].time_since_update > 15]
         matches_b, unmatched_tracks_b, unmatched_detections = \
             linear_assignment.min_cost_matching(
                 iou_matching.iou_cost, self.max_iou_distance, self.tracks,

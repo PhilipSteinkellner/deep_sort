@@ -79,7 +79,6 @@ class Track:
 
         self._n_init = n_init
         self._max_age = max_age
-
         self.cl = cl
 
     def to_tlwh(self):

@@ -44,7 +44,7 @@ def _cosine_distance(a, b, data_is_normalized=False):
     Returns
     -------
     ndarray
-        Returns a matrix of size len(a), len(b) such that eleement (i, j)
+        Returns a matrix of size len(a), len(b) such that element (i, j)
         contains the squared distance between `a[i]` and `b[j]`.
 
     """
@@ -174,4 +174,5 @@ class NearestNeighborDistanceMetric(object):
         cost_matrix = np.zeros((len(targets), len(features)))
         for i, target in enumerate(targets):
             cost_matrix[i, :] = self._metric(self.samples[target], features)
+        #print(cost_matrix.max())
         return cost_matrix

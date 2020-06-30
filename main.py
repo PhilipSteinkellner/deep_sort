@@ -5,6 +5,7 @@
 #import os
 #import datetime
 from timeit import time
+from datetime import datetime
 import warnings
 import cv2
 import numpy as np
@@ -33,9 +34,9 @@ warnings.filterwarnings('ignore')
 np.random.seed(50)
 COLORS = np.random.randint(0, 255, size=(200, 3), dtype="uint8")
 
-# Parameters
+# YOLO parameters
 confThreshold = 0.2  # Confidence threshold
-nmsThreshold = 0.4  # Non-maximum suppression threshold
+nmsThreshold = 0.5  # Non-maximum suppression threshold
 inpWidth = 416 #608 # Width of network's input image
 inpHeight = 416 #608 # Height of network's input image
 
@@ -49,14 +50,20 @@ def main(yolo):
 
     start = time.time()
 
-    # init tracker
-    max_cosine_distance = 1.0 #0.5
+    # TRACKER parameters
+    distance_metric = "cosine"
+    max_cosine_distance = 0.5
     nn_budget = None
-    metric = nn_matching.NearestNeighborDistanceMetric("cosine", max_cosine_distance, nn_budget)
-    tracker = Tracker(metric)
+    metric = nn_matching.NearestNeighborDistanceMetric(distance_metric, max_cosine_distance, nn_budget)
+    max_iou_distance=0.9
+    max_age=30
+    n_init=3
+    # init tracker
+    tracker = Tracker(metric, max_iou_distance, max_age, n_init)
 
     # checkpoint file for deep assossiation matrix
     model_filename = 'resources/networks/mars-small128.pb'
+    # feature extractor
     encoder = gdet.create_box_encoder(model_filename, batch_size=1)
 
     writeVideo_flag = True
@@ -68,8 +75,8 @@ def main(yolo):
         w = round(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
         h = round(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = video_capture.get(cv2.CAP_PROP_FPS)
-        output_name = str(args["input"]).split(".")[0] + "_output_tresh{}.mp4".format(confThreshold)
-        video_writer = cv2.VideoWriter('./'+output_name, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, (w, h))
+        output_name = str(args["input"]).split(".")[0] + "_output_{}.mp4".format(datetime.now().time())
+        video_writer = cv2.VideoWriter('./output/'+output_name, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, (w, h))
         list_file = open('detection.txt', 'w')
         frame_index = -1
 
@@ -94,10 +101,10 @@ def main(yolo):
         detections = [Detection(bbox, conf, feature, cl) for bbox, conf, feature, cl in zip(boxs, confidences, features, class_names) if cl =='person']
 
         # Call the tracker
-        t1 = time.time()
+        t2 = time.time()
         tracker.predict()
         tracker.update(detections)
-        track_time = time.time() - t1
+        track_time = time.time() - t2
         
         active_tracks = int(0)
         indexIDs = []

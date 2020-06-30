@@ -188,5 +188,7 @@ def gate_cost_matrix(
         track = tracks[track_idx]
         gating_distance = kf.gating_distance(
             track.mean, track.covariance, measurements, only_position)
-        cost_matrix[row, gating_distance > gating_threshold] = gated_cost
+        # TODO: combined association cost with weighted sum over appearance and motion metric [y*a + (1-y)*b]
+        #cost_matrix[row, gating_distance > gating_threshold] = gated_cost
+        print("cost matrix track {}: {}".format(track_idx, cost_matrix))
     return cost_matrix
