@@ -52,7 +52,7 @@ def main(yolo):
 
     # TRACKER parameters
     distance_metric = "cosine"
-    max_cosine_distance = 0.5
+    max_cosine_distance = 0.2
     nn_budget = None
     metric = nn_matching.NearestNeighborDistanceMetric(distance_metric, max_cosine_distance, nn_budget)
     max_iou_distance=0.9
@@ -75,7 +75,7 @@ def main(yolo):
         w = round(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
         h = round(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = video_capture.get(cv2.CAP_PROP_FPS)
-        output_name = str(args["input"]).split(".")[0] + "_output_{}.mp4".format(datetime.now().time())
+        output_name = str(args["input"]).split(".")[0] + "_output_{}.mp4".format(datetime.now().strftime("%H:%M:%S"))
         video_writer = cv2.VideoWriter('./output/'+output_name, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, (w, h))
         list_file = open('detection.txt', 'w')
         frame_index = -1
@@ -157,6 +157,8 @@ def main(yolo):
         cv2.putText(frame, "Current Object Counter: "+str(active_tracks),(10, 100),0, 1, (255,255,255),1)
         cv2.putText(frame, "FPS: %f"%(fps),(10, 150),0, 1, (0,0,0),11)
         cv2.putText(frame, "FPS: %f"%(fps),(10, 150),0, 1, (255,255,255),1)
+        cv2.putText(frame, "confTresh: %s, maxCosineDist: %s"%(confThreshold, max_cosine_distance),(10, 200),0, 1, (0,0,0),11)
+        cv2.putText(frame, "confTresh: %s, maxCosineDist: %s"%(confThreshold, max_cosine_distance),(10, 200),0, 1, (255,255,255),1)
         
         cv2.imshow(win_name, frame)
         #cv2.imwrite('/tmp/%08d.jpg'%frame_index,frame)

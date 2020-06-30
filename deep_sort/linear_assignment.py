@@ -190,5 +190,5 @@ def gate_cost_matrix(
             track.mean, track.covariance, measurements, only_position)
         # TODO: combined association cost with weighted sum over appearance and motion metric [y*a + (1-y)*b]
         #cost_matrix[row, gating_distance > gating_threshold] = gated_cost
-        print("cost matrix track {}: {}".format(track_idx, cost_matrix))
+    print(colored("cost matrix: {}".format(cost_matrix), "blue"))
     return cost_matrix
