@@ -79,7 +79,7 @@ def main(yolo):
         w = round(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
         h = round(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = video_capture.get(cv2.CAP_PROP_FPS)
-        output_name = str(args["input"]).split(".")[0] + "_output_{}.mp4".format(datetime.now().strftime("%H:%M:%S"))
+        output_name = str(args["input"]).split(".")[0] + "_output_{}.mp4".format(datetime.now().strftime("%m%d-%H%M"))
         video_writer = cv2.VideoWriter('./output/'+output_name, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, (w, h))
         list_file = open('detection.txt', 'w')
         frame_index = -1
@@ -191,6 +191,7 @@ def main(yolo):
 
     end = time.time()
     print("[Finished in {} seconds]".format(round(end-start)))
+    print("[Wrote outpute file to ./output/{}]".format(output_name))
 
     '''if len(pts[track.track_id]) != None:
        print(args["input"][43:57]+": "+ str(count) + " " + str(class_name) +' Found')
