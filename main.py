@@ -34,6 +34,10 @@ warnings.filterwarnings('ignore')
 np.random.seed(50)
 COLORS = np.random.randint(0, 255, size=(200, 3), dtype="uint8")
 
+# YOLO network files
+modelConfiguration = "../yolo-coco/yolov3.cfg"
+modelWeights = "../yolo-coco/yolov3.weights"
+
 # YOLO parameters
 confThreshold = 0.2  # Confidence threshold
 nmsThreshold = 0.5  # Non-maximum suppression threshold
@@ -80,7 +84,7 @@ def main(yolo):
         list_file = open('detection.txt', 'w')
         frame_index = -1
 
-    win_name = "YOLOv3_Deep_SORT"
+    win_name = "YOLO_Deep_SORT_TRACKER"
     #cv2.namedWindow(win_name, flags=cv2.WINDOW_NORMAL)
     #cv2.resizeWindow(win_name, w, h)
 
@@ -159,7 +163,10 @@ def main(yolo):
         cv2.putText(frame, "FPS: %f"%(fps),(10, 150),0, 1, (255,255,255),1)
         cv2.putText(frame, "confTresh: %s, maxCosineDist: %s"%(confThreshold, max_cosine_distance),(10, 200),0, 1, (0,0,0),11)
         cv2.putText(frame, "confTresh: %s, maxCosineDist: %s"%(confThreshold, max_cosine_distance),(10, 200),0, 1, (255,255,255),1)
-        
+        cv2.putText(frame, "Frame: %s/%s"%(frame_index+1, total_frame_count),(10, h-50),0, 1, (0,0,0),11)
+        cv2.putText(frame, "Frame: %s/%s"%(frame_index+1, total_frame_count),(10, h-50),0, 1, (255,255,255),1)
+        cv2.putText(frame, "%s"%(modelWeights.rsplit(".")[-2]),(10, h-100),0, 1, (0,0,0),11)
+        cv2.putText(frame, "%s"%(modelWeights.rsplit(".")[-2]),(10, h-100),0, 1, (255,255,255),1)
         cv2.imshow(win_name, frame)
         #cv2.imwrite('/tmp/%08d.jpg'%frame_index,frame)
 
@@ -198,10 +205,6 @@ def main(yolo):
     cv2.destroyAllWindows()
 
 def init_YOLO():
-    # network files
-    modelConfiguration = "../yolo-coco/yolov3.cfg"
-    modelWeights = "../yolo-coco/yolov3.weights"
-
     # Initialise YOLO
     net = cv2.dnn.readNetFromDarknet(modelConfiguration, modelWeights)
     net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
