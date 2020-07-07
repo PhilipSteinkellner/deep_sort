@@ -91,3 +91,5 @@ ENV/
 MOT16
 resources/detections
 *.mp4
+*.pb
+.DS_Store

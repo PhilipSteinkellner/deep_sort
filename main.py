@@ -157,16 +157,16 @@ def main(yolo):
         cv2.putText(frame, "Total Object Counter: "+str(count),(10, 50),0, 1, (255,255,255),1)
         cv2.putText(frame, "Current Object Counter: "+str(active_tracks),(10, 100),0, 1, (0,0,0),11)
         cv2.putText(frame, "Current Object Counter: "+str(active_tracks),(10, 100),0, 1, (255,255,255),1)
-        cv2.putText(frame, "FPS: %.2f, YOLO: %dms, SORT: %dms"%(fps, det_time*1000, track_time*1000),(10, 150),0, 1, (0,0,0),11)
-        cv2.putText(frame, "FPS: %.2f, YOLO: %dms, SORT: %dms"%(fps, det_time*1000, track_time*1000),(10, 150),0, 1, (255,255,255),1)
+        cv2.putText(frame, "FPS: %.2f, YOLO: %.2fms, SORT: %.2fms"%(fps, det_time*1000, track_time*1000),(10, 150),0, 1, (0,0,0),11)
+        cv2.putText(frame, "FPS: %.2f, YOLO: %.2fms, SORT: %.2fms"%(fps, det_time*1000, track_time*1000),(10, 150),0, 1, (255,255,255),1)
         cv2.putText(frame, "maxCosineDist: %.2f, maxEuclideanDist: %.2f"%(max_cosine_distance, max_euclidean_distance),(10, 200),0, 1, (0,0,0),11)
         cv2.putText(frame, "maxCosineDist: %.2f, maxEuclideanDist: %.2f"%(max_cosine_distance, max_euclidean_distance),(10, 200),0, 1, (255,255,255),1)
 
         # bottom left on screen
         cv2.putText(frame, "Frame: %s/%s"%(frame_index, total_frame_count),(10, video_height-20),0, 1, (0,0,0),11)
         cv2.putText(frame, "Frame: %s/%s"%(frame_index, total_frame_count),(10, video_height-20),0, 1, (255,255,255),1)
-        cv2.putText(frame, "confTresh: %s, nmsTresh: %s"%(confThreshold, nmsThreshold),(10, video_height-70),0, 1, (0,0,0),11)
-        cv2.putText(frame, "confTresh: %s, nmsTresh: %s"%(confThreshold, nmsThreshold),(10, video_height-70),0, 1, (255,255,255),1)
+        cv2.putText(frame, "confTresh: %.2f, nmsTresh: %.2f"%(confThreshold, nmsThreshold),(10, video_height-70),0, 1, (0,0,0),11)
+        cv2.putText(frame, "confTresh: %.2f, nmsTresh: %.2f"%(confThreshold, nmsThreshold),(10, video_height-70),0, 1, (255,255,255),1)
         cv2.putText(frame, "%s"%(modelWeights.rsplit(".")[-2] + " {}x{}".format(inpWidth, inpHeight)),(10, video_height-120),0, 1, (0,0,0),11)
         cv2.putText(frame, "%s"%(modelWeights.rsplit(".")[-2] + " {}x{}".format(inpWidth, inpHeight)),(10, video_height-120),0, 1, (255,255,255),1)
         cv2.imshow(win_name, frame)
@@ -184,7 +184,7 @@ def main(yolo):
             frame_index = frame_index + 1
             
         fps  = 1./(time.time()-t1)
-        print("Progress: %.2f%% (%d/%d) || FPS: %.2f || YOLO: %d ms || Deep_Sort: %d ms"
+        print("Progress: %.2f%% (%d/%d) || FPS: %.2f || YOLO: %.2fms || Deep_Sort: %.2fms"
             %(100*(frame_index)/total_frame_count, frame_index, total_frame_count, fps, det_time*1000, track_time*1000))
         
         # Press Q to stop
