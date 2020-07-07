@@ -112,9 +112,13 @@ class Tracker:
             i for i, t in enumerate(self.tracks) if not t.is_confirmed()]
 
         # Associate confirmed tracks using appearance features (and motion vector).
+        # matches_a, unmatched_tracks_a, unmatched_detections = \
+        #     linear_assignment.matching_cascade(
+        #         gated_metric, self.metric.matching_threshold, self.max_age,
+        #         self.tracks, detections, confirmed_tracks)
         matches_a, unmatched_tracks_a, unmatched_detections = \
-            linear_assignment.matching_cascade(
-                gated_metric, self.metric.matching_threshold, self.max_age,
+            linear_assignment.min_cost_matching(
+                gated_metric, self.metric.matching_threshold,
                 self.tracks, detections, confirmed_tracks)
 
         # Associate remaining tracks together with unconfirmed tracks using IOU.
