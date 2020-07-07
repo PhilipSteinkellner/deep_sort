@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.utils.linear_assignment_ import linear_assignment
 from . import kalman_filter
 from termcolor import colored
+from . import distance_matching
 
 
 INFTY_COST = 1e+5
@@ -144,8 +145,10 @@ def matching_cascade(
 
 
 def gate_cost_matrix(
-        kf, cost_matrix, tracks, detections, track_indices, detection_indices,
-        gated_cost=INFTY_COST, only_position=False):
+        # kf, cost_matrix, tracks, detections, track_indices, detection_indices,
+        # gated_cost=INFTY_COST, only_position=False):
+        video_dimensions, max_euclidean_distance, cost_matrix, tracks, detections, track_indices, detection_indices,
+        gated_cost=INFTY_COST):
     """Invalidate infeasible entries in cost matrix based on the state
     distributions obtained by Kalman filtering.
 
@@ -180,15 +183,27 @@ def gate_cost_matrix(
         Returns the modified cost matrix.
 
     """
-    gating_dim = 2 if only_position else 4
-    gating_threshold = kalman_filter.chi2inv95[gating_dim]
-    measurements = np.asarray(
-        [detections[i].to_xyah() for i in detection_indices])
-    for row, track_idx in enumerate(track_indices):
-        track = tracks[track_idx]
-        gating_distance = kf.gating_distance(
-            track.mean, track.covariance, measurements, only_position)
-        # TODO: combined association cost with weighted sum over appearance and motion metric [y*a + (1-y)*b]
-        #cost_matrix[row, gating_distance > gating_threshold] = gated_cost
+    # gating_dim = 2 if only_position else 4
+    # gating_threshold = kalman_filter.chi2inv95[gating_dim]
+    # measurements = np.asarray(
+    #     [detections[i].to_xyah() for i in detection_indices])
+    # for row, track_idx in enumerate(track_indices):
+    #     track = tracks[track_idx]
+    #     gating_distance = kf.gating_distance(
+    #         track.mean, track.covariance, measurements, only_position)
+    #     # TODO: combined association cost with weighted sum over appearance and motion metric [y*a + (1-y)*b]
+    #     #cost_matrix[row, gating_distance > gating_threshold] = gated_cost
+    # print(colored("cost matrix: {}".format(cost_matrix), "blue"))
+    # return cost_matrix
+
+    gating_threshold = max_euclidean_distance
+    distance_cost_matrix = distance_matching.distance_cost(
+        video_dimensions, tracks, detections, track_indices, detection_indices
+    )
+    for row in range(len(track_indices)):
+        # TODO: possibility of combined association cost with weighted sum over appearance and distance metric [y*a + (1-y)*b]
+        for column in range(len(detection_indices)):
+            if distance_cost_matrix[row, column] > gating_threshold:
+                cost_matrix[row, column] = gated_cost
     print(colored("cost matrix: {}".format(cost_matrix), "blue"))
     return cost_matrix

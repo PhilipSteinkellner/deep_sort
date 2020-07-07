@@ -37,16 +37,17 @@ class Tracker:
 
     """
 
-    def __init__(self, metric, max_iou_distance=0.9, max_age=30, n_init=3):
+    def __init__(self, metric, video_dimensions, max_euclidean_distance=0.2, max_iou_distance=0.9, max_age=30, n_init=3):
         self.metric = metric
         self.max_iou_distance = max_iou_distance
         self.max_age = max_age
         self.n_init = n_init
-
         self.kf = kalman_filter.KalmanFilter()
         self.tracks = []
         self._next_id = 1
-
+        self.video_dimensions = video_dimensions
+        self.max_euclidean_distance = max_euclidean_distance
+        
     def predict(self):
         """Propagate track state distributions one time step forward.
 
@@ -96,10 +97,12 @@ class Tracker:
             features = np.array([dets[i].feature for i in detection_indices])
             targets = np.array([tracks[i].track_id for i in track_indices])
             cost_matrix = self.metric.distance(features, targets)
+            # cost_matrix = linear_assignment.gate_cost_matrix(
+            #     self.kf, cost_matrix, tracks, dets, track_indices,
+            #     detection_indices)
             cost_matrix = linear_assignment.gate_cost_matrix(
-                self.kf, cost_matrix, tracks, dets, track_indices,
+                self.video_dimensions, self.max_euclidean_distance, cost_matrix, tracks, dets, track_indices,
                 detection_indices)
-
             return cost_matrix
 
         # Split track set into confirmed and unconfirmed tracks.

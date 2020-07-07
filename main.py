@@ -10,18 +10,13 @@ import warnings
 import cv2
 import numpy as np
 import argparse
-#from PIL import Image
-#from yolo import YOLO^
 #from deep_sort import preprocessing
 from deep_sort import nn_matching
 from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
 from tools import generate_detections as gdet
-#from deep_sort.detection import Detection as ddet
 from collections import deque
-#from keras import backend
 
-#backend.clear_session()
 ap = argparse.ArgumentParser()
 ap.add_argument("--input", help="path to input video", default = "./input.mp4")
 # ap.add_argument("-c", "--class",help="name of class", default = "person")
@@ -41,8 +36,8 @@ modelWeights = "../yolo-coco/yolov3.weights"
 # YOLO parameters
 confThreshold = 0.2  # Confidence threshold
 nmsThreshold = 0.5  # Non-maximum suppression threshold
-inpWidth = 416 #608 # Width of network's input image
-inpHeight = 416 #608 # Height of network's input image
+inpWidth = 416 # Width of network's input image
+inpHeight = 416 # Height of network's input image
 
 # class names
 classesFile = "../yolo-coco/coco.names"
@@ -50,44 +45,47 @@ classes = None
 with open(classesFile, 'rt') as f:
     classes = f.read().rstrip('\n').split('\n')
 
+# TRACKER parameters
+distance_metric = "cosine"
+max_cosine_distance = 0.2
+max_euclidean_distance = 0.2 # for distance metric
+nn_budget = None
+metric = nn_matching.NearestNeighborDistanceMetric(distance_metric, max_cosine_distance, nn_budget)
+max_iou_distance=0.9
+max_age=30
+n_init=3
+
 def main(yolo):
 
-    start = time.time()
-
-    # TRACKER parameters
-    distance_metric = "cosine"
-    max_cosine_distance = 0.2
-    nn_budget = None
-    metric = nn_matching.NearestNeighborDistanceMetric(distance_metric, max_cosine_distance, nn_budget)
-    max_iou_distance=0.9
-    max_age=30
-    n_init=3
-    # init tracker
-    tracker = Tracker(metric, max_iou_distance, max_age, n_init)
+    start = time.time() # overall computation time
 
     # checkpoint file for deep assossiation matrix
     model_filename = 'resources/networks/mars-small128.pb'
     # feature extractor
     encoder = gdet.create_box_encoder(model_filename, batch_size=1)
 
-    writeVideo_flag = True
     video_capture = cv2.VideoCapture(args["input"])
+    # video features
     total_frame_count = int(video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
+    video_width = round(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+    video_height = round(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = video_capture.get(cv2.CAP_PROP_FPS)
     
+    # init tracker
+    tracker = Tracker(metric, [video_width, video_height], max_euclidean_distance, max_iou_distance, max_age, n_init)
+
+    writeVideo_flag = True
     if writeVideo_flag:
         # Define the codec and create VideoWriter object
-        w = round(video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
-        h = round(video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        fps = video_capture.get(cv2.CAP_PROP_FPS)
         output_name = str(args["input"]).split(".")[0] + "_output_{}.mp4".format(datetime.now().strftime("%m%d-%H%M"))
-        video_writer = cv2.VideoWriter('./output/'+output_name, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, (w, h))
+        video_writer = cv2.VideoWriter('./output/'+output_name, cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), fps, (video_width, video_height))
         list_file = open('detection.txt', 'w')
-        frame_index = -1
 
     win_name = "YOLO_Deep_SORT_TRACKER"
     #cv2.namedWindow(win_name, flags=cv2.WINDOW_NORMAL)
     #cv2.resizeWindow(win_name, w, h)
-
+    
+    frame_index = 0
     fps = 0.0
     counter = []
 
@@ -100,9 +98,9 @@ def main(yolo):
         # get yolo detections
         boxs, confidences, class_names = detect_image(yolo, frame)
         det_time = time.time() -t1 # time needed for yolo object detection
-        features = encoder(frame, boxs)
+        features = encoder(frame, boxs) # get appearance feature vector
 
-        detections = [Detection(bbox, conf, feature, cl) for bbox, conf, feature, cl in zip(boxs, confidences, features, class_names) if cl =='person']
+        detections = [Detection(bbox, conf, feature, cl) for bbox, conf, feature, cl in zip(boxs, confidences, features, class_names) if cl =='person'] # only consider detections of persons
 
         # Call the tracker
         t2 = time.time()
@@ -110,7 +108,7 @@ def main(yolo):
         tracker.update(detections)
         track_time = time.time() - t2
         
-        active_tracks = int(0)
+        active_tracks = 0
         indexIDs = []
         c = []
         boxes = []
@@ -154,19 +152,23 @@ def main(yolo):
             #     #cv2.putText(frame, str(class_names[j]),(int(bbox[0]), int(bbox[1] -20)),0, 5e-3 * 150, (255,255,255),2)
 
         count = len(set(counter))
-                
+        # top left on screen
         cv2.putText(frame, "Total Object Counter: "+str(count),(10, 50),0, 1, (0,0,0),11)
         cv2.putText(frame, "Total Object Counter: "+str(count),(10, 50),0, 1, (255,255,255),1)
         cv2.putText(frame, "Current Object Counter: "+str(active_tracks),(10, 100),0, 1, (0,0,0),11)
         cv2.putText(frame, "Current Object Counter: "+str(active_tracks),(10, 100),0, 1, (255,255,255),1)
-        cv2.putText(frame, "FPS: %f"%(fps),(10, 150),0, 1, (0,0,0),11)
-        cv2.putText(frame, "FPS: %f"%(fps),(10, 150),0, 1, (255,255,255),1)
-        cv2.putText(frame, "confTresh: %s, maxCosineDist: %s"%(confThreshold, max_cosine_distance),(10, 200),0, 1, (0,0,0),11)
-        cv2.putText(frame, "confTresh: %s, maxCosineDist: %s"%(confThreshold, max_cosine_distance),(10, 200),0, 1, (255,255,255),1)
-        cv2.putText(frame, "Frame: %s/%s"%(frame_index+1, total_frame_count),(10, h-50),0, 1, (0,0,0),11)
-        cv2.putText(frame, "Frame: %s/%s"%(frame_index+1, total_frame_count),(10, h-50),0, 1, (255,255,255),1)
-        cv2.putText(frame, "%s"%(modelWeights.rsplit(".")[-2]),(10, h-100),0, 1, (0,0,0),11)
-        cv2.putText(frame, "%s"%(modelWeights.rsplit(".")[-2]),(10, h-100),0, 1, (255,255,255),1)
+        cv2.putText(frame, "FPS: %.2f, YOLO: %dms, SORT: %dms"%(fps, det_time*1000, track_time*1000),(10, 150),0, 1, (0,0,0),11)
+        cv2.putText(frame, "FPS: %.2f, YOLO: %dms, SORT: %dms"%(fps, det_time*1000, track_time*1000),(10, 150),0, 1, (255,255,255),1)
+        cv2.putText(frame, "maxCosineDist: %.2f, maxEuclideanDist: %.2f"%(max_cosine_distance, max_euclidean_distance),(10, 200),0, 1, (0,0,0),11)
+        cv2.putText(frame, "maxCosineDist: %.2f, maxEuclideanDist: %.2f"%(max_cosine_distance, max_euclidean_distance),(10, 200),0, 1, (255,255,255),1)
+
+        # bottom left on screen
+        cv2.putText(frame, "Frame: %s/%s"%(frame_index, total_frame_count),(10, video_height-20),0, 1, (0,0,0),11)
+        cv2.putText(frame, "Frame: %s/%s"%(frame_index, total_frame_count),(10, video_height-20),0, 1, (255,255,255),1)
+        cv2.putText(frame, "confTresh: %s, nmsTresh: %s"%(confThreshold, nmsThreshold),(10, video_height-70),0, 1, (0,0,0),11)
+        cv2.putText(frame, "confTresh: %s, nmsTresh: %s"%(confThreshold, nmsThreshold),(10, video_height-70),0, 1, (255,255,255),1)
+        cv2.putText(frame, "%s"%(modelWeights.rsplit(".")[-2] + " {}x{}".format(inpWidth, inpHeight)),(10, video_height-120),0, 1, (0,0,0),11)
+        cv2.putText(frame, "%s"%(modelWeights.rsplit(".")[-2] + " {}x{}".format(inpWidth, inpHeight)),(10, video_height-120),0, 1, (255,255,255),1)
         cv2.imshow(win_name, frame)
         #cv2.imwrite('/tmp/%08d.jpg'%frame_index,frame)
 
@@ -174,17 +176,17 @@ def main(yolo):
             #save a frame
             video_writer.write(frame)
             # save detections to detection file
-            frame_index = frame_index + 1
             list_file.write(str(frame_index)+' ')
             if len(boxs) != 0:
                 for i in range(0,len(boxs)):
                     list_file.write(str(boxs[i][0]) + ' '+str(boxs[i][1]) + ' '+str(boxs[i][2]) + ' '+str(boxs[i][3]) + ' ')
             list_file.write('\n')
-
+            frame_index = frame_index + 1
+            
         fps  = 1./(time.time()-t1)
-        #print(set(counter))
-        print("Progress: %.2f%% (%d/%d) || FPS: %.2f || YOLO: %d ms || Deep_Sort: %.2f ms"
-            %(100*(frame_index+1)/total_frame_count, frame_index+1, total_frame_count, fps, det_time*1000, track_time*1000))
+        print("Progress: %.2f%% (%d/%d) || FPS: %.2f || YOLO: %d ms || Deep_Sort: %d ms"
+            %(100*(frame_index)/total_frame_count, frame_index, total_frame_count, fps, det_time*1000, track_time*1000))
+        
         # Press Q to stop
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
@@ -192,12 +194,6 @@ def main(yolo):
     end = time.time()
     print("[Finished in {} seconds]".format(round(end-start)))
     print("[Wrote outpute file to ./output/{}]".format(output_name))
-
-    '''if len(pts[track.track_id]) != None:
-       print(args["input"][43:57]+": "+ str(count) + " " + str(class_name) +' Found')
-
-    else:
-       print("[No Found]")'''
 
     video_capture.release()
     if writeVideo_flag:
