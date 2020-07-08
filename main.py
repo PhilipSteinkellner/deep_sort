@@ -19,7 +19,7 @@ from collections import deque
 
 ap = argparse.ArgumentParser(description="Run Tracking on an input video")
 ap.add_argument("-i", "--input", help="path to input video", default = "./input.mp4")
-ap.add_argument("-c", "--class", nargs='+', help="names of classes to track", default = "person")
+ap.add_argument("-c", "--class", nargs='+', help="names of classes to track", default = ["person"])
 args = vars(ap.parse_args())
 video_input = args["input"]
 classes_to_track = [cl.lower() for cl in args["class"]]
