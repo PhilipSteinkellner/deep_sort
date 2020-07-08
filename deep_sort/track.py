@@ -5,7 +5,8 @@ class TrackState:
     """
     Enumeration type for the single target track state. Newly created tracks are
     classified as `tentative` until enough evidence has been collected. Then,
-    the track state is changed to `confirmed`. Tracks that are no longer alive
+    the track state is changed to `confirmed`. When no detection could be associated in the last n frames,
+    the state changes to `pending`. Tracks that are no longer alive
     are classified as `deleted` to mark them for removal from the set of active
     tracks.
 
@@ -13,7 +14,8 @@ class TrackState:
 
     Tentative = 1
     Confirmed = 2
-    Deleted = 3
+    Pending = 3
+    Deleted = 4
 
 
 class Track:
@@ -63,8 +65,8 @@ class Track:
 
     """
 
-    def __init__(self, mean, covariance, track_id, n_init, max_age, cl,
-                 feature=None):
+    def __init__(self, mean, covariance, track_id, n_init, max_age,
+                 cl, conf, feature=None):
         self.mean = mean
         self.covariance = covariance
         self.track_id = track_id
@@ -80,6 +82,7 @@ class Track:
         self._n_init = n_init
         self._max_age = max_age
         self.cl = cl
+        self.conf = conf
 
     def to_tlwh(self):
         """Get current position in bounding box format `(top left x, top left y,
@@ -139,10 +142,14 @@ class Track:
         self.mean, self.covariance = kf.update(
             self.mean, self.covariance, detection.to_xyah())
         self.features.append(detection.feature)
+        # update conf
+        self.conf = detection.confidence
 
         self.hits += 1
         self.time_since_update = 0
         if self.state == TrackState.Tentative and self.hits >= self._n_init:
+            self.state = TrackState.Confirmed
+        elif self.state == TrackState.Pending:
             self.state = TrackState.Confirmed
 
     def mark_missed(self):
@@ -152,6 +159,10 @@ class Track:
             self.state = TrackState.Deleted
         elif self.time_since_update > self._max_age:
             self.state = TrackState.Deleted
+        elif self.state == TrackState.Confirmed and self.time_since_update > self._n_init:
+            self.state = TrackState.Pending
+        # diminish confidence when no detection could be associated with the track
+        self.conf = self.conf * 0.75 # diminish by 25%
 
     def is_tentative(self):
         """Returns True if this track is tentative (unconfirmed).
@@ -165,3 +176,20 @@ class Track:
     def is_deleted(self):
         """Returns True if this track is dead and should be deleted."""
         return self.state == TrackState.Deleted
+    
+    def is_pending(self):
+        """Returns True if this track is pending."""
+        return self.state == TrackState.Pending
+    
+    def get_id(self):
+        """Returns the Track ID
+        """
+        return self.track_id
+    
+    def get_conf(self):
+        """returns the confidence of the track
+
+        Returns:
+            float: confidence of the track
+        """
+        return self.conf
