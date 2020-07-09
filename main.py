@@ -152,9 +152,9 @@ def main(yolo):
             
             bbox = track.to_tlwh()
             # save tracks to file
-            tracks_file.write(str(frame_index)+' ')
-            tracks_file.write("{} {} {} {} {} {}".format(track.get_id(), bbox[0], bbox[1], bbox[2], bbox[3], track.get_conf()))
-            tracks_file.write(' ' + '-1, -1, -1')
+            tracks_file.write(str(frame_index)+',')
+            tracks_file.write("{},{},{},{},{},{},".format(track.get_id(), bbox[0], bbox[1], bbox[2], bbox[3], track.get_conf()))
+            tracks_file.write(' ' + '-1,-1,-1')
             tracks_file.write('\n')
 
         count = len(set(counter))
